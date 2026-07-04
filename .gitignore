@@ -1,0 +1,18 @@
+# Rebar3 build artifacts
+_build/
+ebin/
+.rebar/
+.rebar3/
+*.crashdump
+*.dump
+
+# Crash dumps and logs
+erl_crash.dump
+*.log
+
+# Editor directories
+.idea/
+.vscode/
+.gemini/
+*.swp
+*.swo

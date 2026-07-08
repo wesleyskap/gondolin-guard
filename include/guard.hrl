@@ -12,3 +12,15 @@
     backoff_multiplier = 2.0 :: float(),
     sliding_window_ms = 60000 :: pos_integer()
 }).
+-record(circuit_status, {
+    name :: circuit_name(),
+    state = closed :: circuit_state(),
+    failures = 0 :: non_neg_integer(),
+    successful_probes = 0 :: non_neg_integer(),
+    current_timeout_ms = 10000 :: pos_integer(),
+    last_state_change = 0 :: integer()
+}).
+
+-define(REGISTRY_TABLE, guard_registry).
+
+-endif.

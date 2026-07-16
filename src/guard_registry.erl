@@ -37,3 +37,13 @@ lookup_state(CircuitName) ->
         [] ->
             not_found
     end.
+-export([delete_circuit/1, list_circuits/0]).
+
+-spec delete_circuit(circuit_name()) -> ok.
+delete_circuit(CircuitName) ->
+    ets:delete(?REGISTRY_TABLE, CircuitName),
+    ok.
+
+-spec list_circuits() -> [{circuit_name(), circuit_state()}].
+list_circuits() ->
+    ets:tab2list(?REGISTRY_TABLE).

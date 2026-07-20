@@ -9,3 +9,10 @@ config_record_defaults_test() ->
     ?assertEqual(3, Config#circuit_config.half_open_probes),
     ?assertEqual(60000, Config#circuit_config.max_reset_timeout_ms),
     ?assertEqual(2.0, Config#circuit_config.backoff_multiplier).
+registry_lifecycle_test() ->
+    guard_registry:init_table(),
+    ?assertEqual(not_found, guard_registry:lookup_state(unknown_circuit)),
+    ok = guard_registry:set_state(test_c, open),
+    ?assertEqual(open, guard_registry:lookup_state(test_c)),
+    ok = guard_registry:delete_circuit(test_c),
+    ?assertEqual(not_found, guard_registry:lookup_state(test_c)).

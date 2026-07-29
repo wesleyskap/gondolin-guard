@@ -59,3 +59,16 @@ trip(Target) ->
 -spec reset(circuit_name() | pid()) -> ok.
 reset(Target) ->
     gen_statem:call(Target, reset).
+init([Name, Config]) ->
+    guard_registry:set_state(Name, closed),
+    Status = #circuit_status{
+        name = Name,
+        state = closed,
+        current_timeout_ms = Config#circuit_config.reset_timeout_ms,
+        last_state_change = erlang:system_time(millisecond)
+    },
+    Data = #data{name = Name, config = Config, status = Status},
+    {ok, closed, Data}.
+
+callback_mode() ->
+    state_functions.

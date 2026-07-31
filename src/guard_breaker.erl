@@ -72,3 +72,26 @@ init([Name, Config]) ->
 
 callback_mode() ->
     state_functions.
+closed(cast, record_success, Data) ->
+    Status = (Data#data.status)#circuit_status{failures = 0},
+    {keep_state, Data#data{status = Status}};
+
+closed(cast, record_failure, Data) ->
+    CurrentFailures = (Data#data.status)#circuit_status.failures + 1,
+    Config = Data#data.config,
+    case CurrentFailures >= Config#circuit_config.failure_threshold of
+        true ->
+            trip_to_open(Data);
+        false ->
+            Status = (Data#data.status)#circuit_status{failures = CurrentFailures},
+            {keep_state, Data#data{status = Status}}
+    end;
+
+closed({call, From}, status, Data) ->
+    {keep_state_and_data, [{reply, From, Data#data.status}]};
+
+closed({call, From}, trip, Data) ->
+    trip_to_open_reply(From, Data);
+
+closed({call, From}, reset, Data) ->
+    {keep_state_and_data, [{reply, From, ok}]}.

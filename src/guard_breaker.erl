@@ -95,3 +95,17 @@ closed({call, From}, trip, Data) ->
 
 closed({call, From}, reset, Data) ->
     {keep_state_and_data, [{reply, From, ok}]}.
+open(state_timeout, reset_timeout, Data) ->
+    transition_to_half_open(Data);
+
+open(cast, _Event, _Data) ->
+    keep_state_and_data;
+
+open({call, From}, status, Data) ->
+    {keep_state_and_data, [{reply, From, Data#data.status}]};
+
+open({call, From}, trip, _Data) ->
+    {keep_state_and_data, [{reply, From, ok}]};
+
+open({call, From}, reset, Data) ->
+    reset_to_closed_reply(From, Data).

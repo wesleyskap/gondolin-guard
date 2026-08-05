@@ -109,3 +109,25 @@ open({call, From}, trip, _Data) ->
 
 open({call, From}, reset, Data) ->
     reset_to_closed_reply(From, Data).
+half_open(cast, record_success, Data) ->
+    Probes = (Data#data.status)#circuit_status.successful_probes + 1,
+    Config = Data#data.config,
+    case Probes >= Config#circuit_config.half_open_probes of
+        true ->
+            reset_to_closed(Data);
+        false ->
+            Status = (Data#data.status)#circuit_status{successful_probes = Probes},
+            {keep_state, Data#data{status = Status}}
+    end;
+
+half_open(cast, record_failure, Data) ->
+    trip_to_open_with_backoff(Data);
+
+half_open({call, From}, status, Data) ->
+    {keep_state_and_data, [{reply, From, Data#data.status}]};
+
+half_open({call, From}, trip, Data) ->
+    trip_to_open_reply(From, Data);
+
+half_open({call, From}, reset, Data) ->
+    reset_to_closed_reply(From, Data).

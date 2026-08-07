@@ -131,3 +131,25 @@ half_open({call, From}, trip, Data) ->
 
 half_open({call, From}, reset, Data) ->
     reset_to_closed_reply(From, Data).
+trip_to_open(Data) ->
+    Name = Data#data.name,
+    Timeout = (Data#data.status)#circuit_status.current_timeout_ms,
+    guard_registry:set_state(Name, open),
+    Status = (Data#data.status)#circuit_status{
+        state = open,
+        failures = 0,
+        last_state_change = erlang:system_time(millisecond)
+    },
+    {next_state, open, Data#data{status = Status}, [{state_timeout, Timeout, reset_timeout}]}.
+
+trip_to_open_reply(From, Data) ->
+    Name = Data#data.name,
+    Timeout = (Data#data.status)#circuit_status.current_timeout_ms,
+    guard_registry:set_state(Name, open),
+    Status = (Data#data.status)#circuit_status{
+        state = open,
+        failures = 0,
+        last_state_change = erlang:system_time(millisecond)
+    },
+    Actions = [{reply, From, ok}, {state_timeout, Timeout, reset_timeout}],
+    {next_state, open, Data#data{status = Status}, Actions}.

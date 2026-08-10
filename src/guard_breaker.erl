@@ -153,3 +153,22 @@ trip_to_open_reply(From, Data) ->
     },
     Actions = [{reply, From, ok}, {state_timeout, Timeout, reset_timeout}],
     {next_state, open, Data#data{status = Status}, Actions}.
+trip_to_open_with_backoff(Data) ->
+    Name = Data#data.name,
+    Config = Data#data.config,
+    OldTimeout = (Data#data.status)#circuit_status.current_timeout_ms,
+    NewTimeout = calculate_backoff(OldTimeout, Config),
+    guard_registry:set_state(Name, open),
+    Status = (Data#data.status)#circuit_status{
+        state = open,
+        failures = 0,
+        current_timeout_ms = NewTimeout,
+        last_state_change = erlang:system_time(millisecond)
+    },
+    {next_state, open, Data#data{status = Status}, [{state_timeout, NewTimeout, reset_timeout}]}.
+
+calculate_backoff(CurrentTimeout, Config) ->
+    Multiplier = Config#circuit_config.backoff_multiplier,
+    MaxTimeout = Config#circuit_config.max_reset_timeout_ms,
+    Calculated = erlang:round(CurrentTimeout * Multiplier),
+    erlang:min(Calculated, MaxTimeout).

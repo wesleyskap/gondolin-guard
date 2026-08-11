@@ -172,3 +172,45 @@ calculate_backoff(CurrentTimeout, Config) ->
     MaxTimeout = Config#circuit_config.max_reset_timeout_ms,
     Calculated = erlang:round(CurrentTimeout * Multiplier),
     erlang:min(Calculated, MaxTimeout).
+transition_to_half_open(Data) ->
+    Name = Data#data.name,
+    guard_registry:set_state(Name, half_open),
+    Status = (Data#data.status)#circuit_status{
+        state = half_open,
+        successful_probes = 0,
+        last_state_change = erlang:system_time(millisecond)
+    },
+    {next_state, half_open, Data#data{status = Status}}.
+
+reset_to_closed(Data) ->
+    Name = Data#data.name,
+    Config = Data#data.config,
+    guard_registry:set_state(Name, closed),
+    Status = (Data#data.status)#circuit_status{
+        state = closed,
+        failures = 0,
+        successful_probes = 0,
+        current_timeout_ms = Config#circuit_config.reset_timeout_ms,
+        last_state_change = erlang:system_time(millisecond)
+    },
+    {next_state, closed, Data#data{status = Status}}.
+
+reset_to_closed_reply(From, Data) ->
+    Name = Data#data.name,
+    Config = Data#data.config,
+    guard_registry:set_state(Name, closed),
+    Status = (Data#data.status)#circuit_status{
+        state = closed,
+        failures = 0,
+        successful_probes = 0,
+        current_timeout_ms = Config#circuit_config.reset_timeout_ms,
+        last_state_change = erlang:system_time(millisecond)
+    },
+    {next_state, closed, Data#data{status = Status}, [{reply, From, ok}]}.
+
+terminate(_Reason, _State, Data) ->
+    guard_registry:delete_circuit(Data#data.name),
+    ok.
+
+code_change(_OldVsn, State, Data, _Extra) ->
+    {ok, State, Data}.

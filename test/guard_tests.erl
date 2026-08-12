@@ -28,3 +28,12 @@ breaker_state_transitions_test() ->
     timer:sleep(20),
     ?assertEqual(open, (guard_breaker:status(Pid))#circuit_status.state),
     guard_breaker:stop(Pid).
+breaker_manual_controls_test() ->
+    guard_registry:init_table(),
+    Name = breaker_ctrl_test,
+    {ok, Pid} = guard_breaker:start_link(Name, #circuit_config{}),
+    ok = guard_breaker:trip(Pid),
+    ?assertEqual(open, (guard_breaker:status(Pid))#circuit_status.state),
+    ok = guard_breaker:reset(Pid),
+    ?assertEqual(closed, (guard_breaker:status(Pid))#circuit_status.state),
+    guard_breaker:stop(Pid).

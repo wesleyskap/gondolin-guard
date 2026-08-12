@@ -16,3 +16,15 @@ registry_lifecycle_test() ->
     ?assertEqual(open, guard_registry:lookup_state(test_c)),
     ok = guard_registry:delete_circuit(test_c),
     ?assertEqual(not_found, guard_registry:lookup_state(test_c)).
+breaker_state_transitions_test() ->
+    guard_registry:init_table(),
+    Name = breaker_trans_test,
+    Config = #circuit_config{failure_threshold = 2, reset_timeout_ms = 100},
+    {ok, Pid} = guard_breaker:start_link(Name, Config),
+    ?assertEqual(closed, (guard_breaker:status(Pid))#circuit_status.state),
+    guard_breaker:record_failure(Pid),
+    ?assertEqual(closed, (guard_breaker:status(Pid))#circuit_status.state),
+    guard_breaker:record_failure(Pid),
+    timer:sleep(20),
+    ?assertEqual(open, (guard_breaker:status(Pid))#circuit_status.state),
+    guard_breaker:stop(Pid).

@@ -1,0 +1,14 @@
+{application, guard, [
+    {description, "High-performance OTP Circuit Breaker for Erlang"},
+    {vsn, "1.0.0"},
+    {registered, [guard_sup, guard_breaker_sup, guard_registry]},
+    {mod, {guard_app, []}},
+    {applications, [
+        kernel,
+        stdlib
+    ]},
+    {env, []},
+    {modules, []},
+    {licenses, ["MIT"]},
+    {links, [{"GitHub", "https://github.com/wesleyskap/gondolin-guard"}]}
+]}.

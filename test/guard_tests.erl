@@ -37,3 +37,10 @@ breaker_manual_controls_test() ->
     ok = guard_breaker:reset(Pid),
     ?assertEqual(closed, (guard_breaker:status(Pid))#circuit_status.state),
     guard_breaker:stop(Pid).
+supervision_tree_test() ->
+    {ok, SupPid} = guard_sup:start_link(),
+    ?assert(is_pid(whereis(guard_breaker_sup))),
+    {ok, ChildPid} = guard_breaker_sup:start_breaker(sup_test_circuit, #circuit_config{}),
+    ?assert(is_pid(ChildPid)),
+    ok = guard_breaker_sup:stop_breaker(sup_test_circuit),
+    exit(SupPid, kill).

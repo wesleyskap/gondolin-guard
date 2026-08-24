@@ -9,9 +9,9 @@ start_link() ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 init([]) ->
-    guard_registry:init_table(),
+    ok = guard_registry:init_table(),
     SupFlags = #{
-        strategy => one_for_all,
+        strategy => rest_for_one,
         intensity => 5,
         period => 10
     },
@@ -20,7 +20,7 @@ init([]) ->
             id => guard_breaker_sup,
             start => {guard_breaker_sup, start_link, []},
             restart => permanent,
-            shutdown => infinity,
+            shutdown => 10000,
             type => supervisor,
             modules => [guard_breaker_sup]
         }

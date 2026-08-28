@@ -40,3 +40,48 @@ trip(Name) ->
 -spec reset(circuit_name()) -> ok.
 reset(Name) ->
     guard_breaker:reset(Name).
+-export([
+    run/2,
+    run/3,
+    call/2,
+    call/3
+]).
+
+-spec run(circuit_name(), fun(() -> Result)) -> {ok, Result} | {error, term()}.
+run(Name, Fun) ->
+    run(Name, Fun, fun(circuit_open) -> {error, circuit_open} end).
+
+-spec run(circuit_name(), fun(() -> Result), fun((term()) -> FallbackResult)) ->
+    {ok, Result} | FallbackResult | {error, term()}.
+run(Name, Fun, FallbackFun) ->
+    case guard_registry:lookup_state(Name) of
+        open ->
+            FallbackFun(circuit_open);
+        not_found ->
+            {error, circuit_not_found};
+        _OtherState ->
+            execute_guarded(Name, Fun, FallbackFun)
+    end.
+
+-spec call(circuit_name(), fun(() -> Result)) -> {ok, Result} | {error, term()}.
+call(Name, Fun) ->
+    run(Name, Fun).
+
+-spec call(circuit_name(), fun(() -> Result), fun((term()) -> FallbackResult)) ->
+    {ok, Result} | FallbackResult | {error, term()}.
+call(Name, Fun, FallbackFun) ->
+    run(Name, Fun, FallbackFun).
+
+execute_guarded(Name, Fun, _FallbackFun) ->
+    try Fun() of
+        {error, Reason} = Error ->
+            guard_breaker:record_failure(Name),
+            Error;
+        Result ->
+            guard_breaker:record_success(Name),
+            {ok, Result}
+    catch
+        Class:Reason:Stacktrace ->
+            guard_breaker:record_failure(Name),
+            {error, {Class, Reason, Stacktrace}}
+    end.

@@ -6,6 +6,10 @@
     start_circuit/1,
     start_circuit/2,
     stop_circuit/1,
+    run/2,
+    run/3,
+    call/2,
+    call/3,
     state/1,
     status/1,
     trip/1,
@@ -40,12 +44,6 @@ trip(Name) ->
 -spec reset(circuit_name()) -> ok.
 reset(Name) ->
     guard_breaker:reset(Name).
--export([
-    run/2,
-    run/3,
-    call/2,
-    call/3
-]).
 
 -spec run(circuit_name(), fun(() -> Result)) -> {ok, Result} | {error, term()}.
 run(Name, Fun) ->
@@ -74,7 +72,7 @@ call(Name, Fun, FallbackFun) ->
 
 execute_guarded(Name, Fun, _FallbackFun) ->
     try Fun() of
-        {error, Reason} = Error ->
+        {error, _Reason} = Error ->
             guard_breaker:record_failure(Name),
             Error;
         Result ->

@@ -97,3 +97,9 @@ test_half_open_recovery() ->
     timer:sleep(10),
     ?assertEqual(closed, guard:state(Circuit)),
     guard:stop_circuit(Circuit).
+crash_handling_test() ->
+    Circuit = crash_test_circuit,
+    {ok, _Pid} = guard:start_circuit(Circuit),
+    CrashFun = fun() -> error(simulated_crash) end,
+    {error, {error, simulated_crash, _Stack}} = guard:run(Circuit, CrashFun),
+    guard:stop_circuit(Circuit).

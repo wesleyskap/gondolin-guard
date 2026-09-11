@@ -27,3 +27,22 @@ Micro-benchmarks executed on AMD Ryzen 7 5700X:
 | **Protected Success** | `guard:run/2` | **2,400,000 ops/sec** | **0.415 us/op** | Minimal tuple |
 
 Direct state checks execute entirely in shared ETS memory, bypassing process message mailboxes during high-volume request bursts.
+## Installation
+
+Add `guard` to your `rebar.config` dependencies:
+
+```erlang
+{deps, [
+    {guard, "1.0.0"}
+]}.
+```
+
+Ensure the application is included in your release or `.app.src`:
+
+```erlang
+{applications, [
+    kernel,
+    stdlib,
+    guard
+]}.
+```

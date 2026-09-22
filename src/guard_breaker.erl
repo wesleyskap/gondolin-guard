@@ -132,46 +132,36 @@ half_open({call, From}, trip, Data) ->
 half_open({call, From}, reset, Data) ->
     reset_to_closed_reply(From, Data).
 trip_to_open(Data) ->
-    Name = Data#data.name,
     Timeout = (Data#data.status)#circuit_status.current_timeout_ms,
-    guard_registry:set_state(Name, open),
-    Status = (Data#data.status)#circuit_status{
-        state = open,
-        failures = 0,
-        last_state_change = erlang:system_time(millisecond)
-    },
-    {next_state, open, Data#data{status = Status}, [{state_timeout, Timeout, reset_timeout}]}.
+    apply_trip_to_open(Data, Timeout, []).
 
 trip_to_open_reply(From, Data) ->
-    Name = Data#data.name,
     Timeout = (Data#data.status)#circuit_status.current_timeout_ms,
-    guard_registry:set_state(Name, open),
-    Status = (Data#data.status)#circuit_status{
-        state = open,
-        failures = 0,
-        last_state_change = erlang:system_time(millisecond)
-    },
-    Actions = [{reply, From, ok}, {state_timeout, Timeout, reset_timeout}],
-    {next_state, open, Data#data{status = Status}, Actions}.
+    apply_trip_to_open(Data, Timeout, [{reply, From, ok}]).
+
 trip_to_open_with_backoff(Data) ->
-    Name = Data#data.name,
-    Config = Data#data.config,
     OldTimeout = (Data#data.status)#circuit_status.current_timeout_ms,
-    NewTimeout = calculate_backoff(OldTimeout, Config),
+    NewTimeout = calculate_backoff(OldTimeout, Data#data.config),
+    apply_trip_to_open(Data, NewTimeout, []).
+
+apply_trip_to_open(Data, Timeout, ExtraActions) ->
+    Name = Data#data.name,
     guard_registry:set_state(Name, open),
     Status = (Data#data.status)#circuit_status{
         state = open,
         failures = 0,
-        current_timeout_ms = NewTimeout,
+        current_timeout_ms = Timeout,
         last_state_change = erlang:system_time(millisecond)
     },
-    {next_state, open, Data#data{status = Status}, [{state_timeout, NewTimeout, reset_timeout}]}.
+    Actions = ExtraActions ++ [{state_timeout, Timeout, reset_timeout}],
+    {next_state, open, Data#data{status = Status}, Actions}.
 
 calculate_backoff(CurrentTimeout, Config) ->
     Multiplier = Config#circuit_config.backoff_multiplier,
     MaxTimeout = Config#circuit_config.max_reset_timeout_ms,
     Calculated = erlang:round(CurrentTimeout * Multiplier),
     erlang:min(Calculated, MaxTimeout).
+
 transition_to_half_open(Data) ->
     Name = Data#data.name,
     guard_registry:set_state(Name, half_open),
@@ -183,19 +173,12 @@ transition_to_half_open(Data) ->
     {next_state, half_open, Data#data{status = Status}}.
 
 reset_to_closed(Data) ->
-    Name = Data#data.name,
-    Config = Data#data.config,
-    guard_registry:set_state(Name, closed),
-    Status = (Data#data.status)#circuit_status{
-        state = closed,
-        failures = 0,
-        successful_probes = 0,
-        current_timeout_ms = Config#circuit_config.reset_timeout_ms,
-        last_state_change = erlang:system_time(millisecond)
-    },
-    {next_state, closed, Data#data{status = Status}}.
+    apply_reset_to_closed(Data, []).
 
 reset_to_closed_reply(From, Data) ->
+    apply_reset_to_closed(Data, [{reply, From, ok}]).
+
+apply_reset_to_closed(Data, Actions) ->
     Name = Data#data.name,
     Config = Data#data.config,
     guard_registry:set_state(Name, closed),
@@ -206,7 +189,7 @@ reset_to_closed_reply(From, Data) ->
         current_timeout_ms = Config#circuit_config.reset_timeout_ms,
         last_state_change = erlang:system_time(millisecond)
     },
-    {next_state, closed, Data#data{status = Status}, [{reply, From, ok}]}.
+    {next_state, closed, Data#data{status = Status}, Actions}.
 
 terminate(_Reason, _State, Data) ->
     guard_registry:delete_circuit(Data#data.name),

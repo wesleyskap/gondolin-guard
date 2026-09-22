@@ -1,6 +1,6 @@
 {application, guard, [
     {description, "High-performance OTP Circuit Breaker for Erlang"},
-    {vsn, "1.0.0"},
+    {vsn, "1.0.1"},
     {registered, [guard_sup, guard_breaker_sup, guard_registry]},
     {mod, {guard_app, []}},
     {applications, [

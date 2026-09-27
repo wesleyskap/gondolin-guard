@@ -118,7 +118,6 @@ The `#circuit_config{}` record supports the following fields:
 - `half_open_probes`: Successful consecutive probe calls required to close circuit (default `3`).
 - `max_reset_timeout_ms`: Maximum backoff duration ceiling (default `60000`).
 - `backoff_multiplier`: Exponential multiplier applied on repeated probe failures (default `2.0`).
-- `sliding_window_ms`: Duration of sliding failure window (default `60000`).
 
 ## License
 

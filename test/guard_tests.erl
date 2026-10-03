@@ -103,3 +103,9 @@ crash_handling_test() ->
     CrashFun = fun() -> error(simulated_crash) end,
     {error, {error, simulated_crash, _Stack}} = guard:run(Circuit, CrashFun),
     guard:stop_circuit(Circuit).
+
+registry_table_resilience_test() ->
+    guard_registry:init_table(),
+    guard_registry:set_state(resilience_test_circuit, closed),
+    ?assertEqual(closed, guard_registry:lookup_state(resilience_test_circuit)),
+    guard_registry:delete_circuit(resilience_test_circuit).
